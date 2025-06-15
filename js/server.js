@@ -60,7 +60,6 @@ app.get("/auth/discord/callback", async (req, res) => {
     req.session.user = userResponse.data;
     res.redirect("/dashboard.html");
   } catch (err) {
-    console.error("OAuth callback error:", err);
     res.send("Error logging in with Discord.");
   }
 });
@@ -101,35 +100,19 @@ const client = new Client({
   ],
 });
 
-client.on("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+client.on("ready", () => {
   client.guilds.cache.forEach((guild) => {
     guild.members.cache.forEach((member) => {
-      if (member.presence) {
-        userStatuses[member.id] = member.presence.status;
-      } else {
-        userStatuses[member.id] = "offline";
-      }
+      userStatuses[member.id] = member.presence ? member.presence.status : "offline";
     });
   });
 });
 
-client.on("presenceUpdate", (oldPresence, newPresence) => {
+client.on("presenceUpdate", (_, newPresence) => {
   if (!newPresence || !newPresence.user) return;
-  const status = newPresence.status;
-  userStatuses[newPresence.user.id] = status;
-});
-
-client.on("guildMemberAdd", (member) => {
-  console.log(`${member.user.tag} joined guild ${member.guild.name}`);
-});
-
-client.on("guildMemberRemove", (member) => {
-  console.log(`${member.user.tag} left guild ${member.guild.name}`);
+  userStatuses[newPresence.user.id] = newPresence.status;
 });
 
 client.login(BOT_TOKEN);
 
-app.listen(PORT, () => {
-  console.log(`App listening on http://localhost:${PORT}`);
-});
+app.listen(PORT);
