@@ -3,7 +3,6 @@ const express = require("express");
 const axios = require("axios");
 const session = require("express-session");
 const path = require("path");
-const { Client, GatewayIntentBits } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,7 +10,6 @@ const PORT = process.env.PORT || 3000;
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI;
-const BOT_TOKEN = process.env.BOT_TOKEN;
 
 app.use(
   session({
@@ -24,8 +22,6 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "html")));
-
-const userStatuses = {};
 
 app.get("/", (req, res) => {
   if (req.session.user) {
@@ -79,6 +75,13 @@ app.get("/logout", (req, res) => {
   });
 });
 
+app.listen(PORT, () => {
+  console.log(`Server listening on http://localhost:${PORT}`);
+});
+
+const { Client, GatewayIntentBits } = require("discord.js");
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -87,10 +90,15 @@ const client = new Client({
   ],
 });
 
+const userStatuses = {};
+
 client.on("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
   client.guilds.cache.forEach((guild) => {
-    guild.members.cache.forEach((member) => {
-      userStatuses[member.id] = member.presence ? member.presence.status : "offline";
+    guild.members.fetch().then((members) => {
+      members.forEach((member) => {
+        userStatuses[member.id] = member.presence ? member.presence.status : "offline";
+      });
     });
   });
 });
@@ -102,4 +110,3 @@ client.on("presenceUpdate", (_, newPresence) => {
 
 client.login(BOT_TOKEN);
 
-app.listen(PORT);
