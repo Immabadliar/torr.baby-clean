@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
@@ -26,8 +25,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "../html")));
 
 const userStatuses = {};
-
-// --- OAuth2 Login Routes ---
 
 app.get("/login", (req, res) => {
   const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
@@ -68,8 +65,6 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-// --- API Routes ---
-
 app.get("/api/user", (req, res) => {
   if (req.session.user) res.json(req.session.user);
   else res.status(401).json({ error: "Not logged in" });
@@ -98,8 +93,6 @@ app.get("/", (req, res) => {
   else res.redirect("/login");
 });
 
-// --- Discord Bot Setup ---
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -110,8 +103,6 @@ const client = new Client({
 
 client.on("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
-
-  // Cache all members' presence status on startup
   client.guilds.cache.forEach((guild) => {
     guild.members.cache.forEach((member) => {
       if (member.presence) {
@@ -125,9 +116,8 @@ client.on("ready", async () => {
 
 client.on("presenceUpdate", (oldPresence, newPresence) => {
   if (!newPresence || !newPresence.user) return;
-  const status = newPresence.status; // online, idle, dnd, offline
+  const status = newPresence.status;
   userStatuses[newPresence.user.id] = status;
-  // Removed status update console log per your request
 });
 
 client.on("guildMemberAdd", (member) => {
