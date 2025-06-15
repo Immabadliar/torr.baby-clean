@@ -6,7 +6,7 @@ const path = require("path");
 const { Client, GatewayIntentBits } = require("discord.js");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -15,22 +15,31 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 
 app.use(
   session({
-    secret: "super_secret_key",
+    secret: process.env.SESSION_SECRET || "super_secret_key",
     resave: false,
     saveUninitialized: false,
   })
 );
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../html")));
+app.use(express.static(path.join(__dirname, "html")));
 
 const userStatuses = {};
 
+app.get("/", (req, res) => {
+  if (req.session.user) {
+    res.sendFile(path.join(__dirname, "html", "dashboard.html"));
+  } else {
+    res.redirect("/login");
+  }
+});
+
 app.get("/login", (req, res) => {
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
+  const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
   )}&response_type=code&scope=identify`;
-  res.redirect(url);
+  res.redirect(discordAuthUrl);
 });
 
 app.get("/auth/discord/callback", async (req, res) => {
@@ -58,38 +67,16 @@ app.get("/auth/discord/callback", async (req, res) => {
     });
 
     req.session.user = userResponse.data;
-    res.redirect("/dashboard.html");
-  } catch (err) {
+    res.redirect("/");
+  } catch {
     res.send("Error logging in with Discord.");
   }
-});
-
-app.get("/api/user", (req, res) => {
-  if (req.session.user) res.json(req.session.user);
-  else res.status(401).json({ error: "Not logged in" });
-});
-
-app.get("/api/status/:userId", (req, res) => {
-  const status = userStatuses[req.params.userId] || "offline";
-  res.json({ userId: req.params.userId, status });
-});
-
-app.post("/api/status", (req, res) => {
-  const { userId, status } = req.body;
-  if (!userId || !status) return res.status(400).json({ error: "Missing userId or status" });
-  userStatuses[userId] = status;
-  res.json({ message: `Status for user ${userId} saved as ${status}` });
 });
 
 app.get("/logout", (req, res) => {
   req.session.destroy(() => {
     res.redirect("/login");
   });
-});
-
-app.get("/", (req, res) => {
-  if (req.session.user) res.redirect("/dashboard.html");
-  else res.redirect("/login");
 });
 
 const client = new Client({

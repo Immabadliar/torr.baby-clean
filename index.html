@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login</title>
+  <title>Redirecting to Discord Login</title>
+  <script>
+    const CLIENT_ID = "1383861563559252160";
+    const REDIRECT_URI = encodeURIComponent("https://torr.baby/auth/discord/callback");
+
+    const oauth2Url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify`;
+
+    window.location.href = oauth2Url;
+  </script>
 </head>
 <body>
-  <script>
-    window.location.href = "/login";
-  </script>
+  <p>Redirecting to Discord login...</p>
 </body>
 </html>
