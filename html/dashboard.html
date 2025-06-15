@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #5865F2, #EB3B8A);
+      color: white;
+      text-align: center;
+      margin: 2rem;
+    }
+    .avatar-container {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 1rem;
+      z-index: 10;
+    }
+    .status-dot {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-sizing: content-box;
+      z-index: 100; /* Make sure dot is always on top */
+    }
+    .online {
+      background-color: #43b581;
+    }
+    .idle {
+      background-color: #faa61a;
+    }
+    .dnd {
+      background-color: #f04747;
+    }
+    .offline {
+      background-color: #747f8d;
+    }
+    #username {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <h1>Dashboard</h1>
+  <div id="profile">
+    <div class="avatar-container">
+      <img id="avatar" src="" alt="User Avatar" width="128" height="128" />
+      <div id="statusDot" class="status-dot offline"></div>
+    </div>
+    <p id="username"></p>
+  </div>
+
+  <script>
+    async function getCurrentUser() {
+      const res = await fetch("/api/user");
+      if (!res.ok) {
+        window.location.href = "/login";
+        return null;
+      }
+      return res.json();
+    }
+
+    async function getStatus(userId) {
+      const res = await fetch(`/api/status/${userId}`);
+      if (!res.ok) return { status: "offline" };
+      return res.json();
+    }
+
+    function statusClass(status) {
+      if (!status) return "offline";
+      status = status.toLowerCase();
+
+      if (status === "online") return "online";
+      if (status === "idle") return "idle";
+      if (status === "dnd" || status === "do_not_disturb") return "dnd";
+      return "offline";
+    }
+
+    async function init() {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      document.getElementById("username").textContent = `${user.username}#${user.discriminator}`;
+      document.getElementById("avatar").src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+
+      const statusData = await getStatus(user.id);
+      console.log("Raw status received:", statusData.status);  // Debug log
+
+      const dot = document.getElementById("statusDot");
+      dot.className = "status-dot " + statusClass(statusData.status);
+    }
+
+    init();
+  </script>
+</body>
+</html>
